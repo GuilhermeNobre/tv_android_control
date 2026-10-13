@@ -40,6 +40,7 @@ KEYS = {
     "home": "HOME",
     "back": "BACK",
     "menu": "MENU",
+    "input": "TV_INPUT",
     "play": "MEDIA_PLAY_PAUSE",
     "next": "MEDIA_NEXT",
     "prev": "MEDIA_PREVIOUS",
