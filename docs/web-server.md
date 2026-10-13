@@ -1,40 +1,40 @@
-# Site / webserver
+# Web server
 
-Interface web para controlar a TV pelo celular, servida por FastAPI (`server.py`) com a página
-estática em `web/index.html`.
+A web interface to control the TV from a phone, served by FastAPI (`server.py`) with the static
+page in `web/index.html`.
 
-## Iniciar
+## Starting
 
 ```bash
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python server.py            # padrão: 0.0.0.0:8000
+.venv/bin/python server.py            # default: 0.0.0.0:8000
 .venv/bin/python server.py --port 8080 --tv 192.168.0.20
 ```
 
-Opções: `--host` (endereço de escuta), `--port`, `--tv` (IP da TV). Abra
-`http://<IP-do-computador>:8000` no celular, na mesma rede Wi-Fi.
+Options: `--host` (listen address), `--port`, `--tv` (TV IP). Open
+`http://<computer-IP>:8000` on the phone, on the same Wi-Fi network.
 
 ## API
 
-| Rota | O que faz |
+| Route | What it does |
 |---|---|
-| `GET /api/status` | Estado da TV, mais listas `apps` e `keys` disponíveis. |
-| `POST /api/key/{nome}?times=N` | Envia uma tecla de `KEYS` (N de 1 a 20). |
-| `POST /api/power/{on\|off}` | Liga/desliga só se o estado atual for diferente. |
-| `POST /api/screen/{on\|off}` | Acende/apaga a tela (`WAKEUP`/`SLEEP`). |
-| `POST /api/app/{nome}` | Abre um app de `APPS`. |
-| `POST /api/text` | Digita texto (`{"value": "..."}`). |
+| `GET /api/status` | TV state, plus the available `apps` and `keys` lists. |
+| `POST /api/key/{name}?times=N` | Sends a key from `KEYS` (N from 1 to 20). |
+| `POST /api/power/{on\|off}` | Turns on/off only if the current state differs. |
+| `POST /api/screen/{on\|off}` | Screen on/off (`WAKEUP`/`SLEEP`). |
+| `POST /api/app/{name}` | Opens an app from `APPS`. |
+| `POST /api/text` | Types text (`{"value": "..."}`). |
 
-Erros: `404` para tecla/app desconhecido, `409` se a TV não foi pareada, `503` se não conectou.
+Errors: `404` for unknown key/app, `409` if the TV isn't paired, `503` if it couldn't connect.
 
-## Como funciona
+## How it works
 
-A classe `TV` mantém **uma única conexão** com a TV (porta 6466) protegida por lock e reconecta
-sob demanda, com uma nova tentativa em caso de falha. Os comandos reutilizam `Session`,
-`KEYS`, `APPS` e `SCREEN` de `tvcontrol/client.py`. O pareamento continua sendo feito pela CLI
-(`tv.py pair`) antes de usar o site.
+The `TV` class keeps **a single connection** to the TV (port 6466) guarded by a lock and
+reconnects on demand, retrying once on failure. Commands reuse `Session`, `KEYS`, `APPS` and
+`SCREEN` from `tvcontrol/client.py`. Pairing is still done through the CLI (`tv.py pair`) before
+using the server.
 
-## Segurança
+## Security
 
-**Não há autenticação.** Qualquer dispositivo na sua rede local que alcance a porta controla a TV.
-Não exponha a porta à internet.
+**There is no authentication.** Any device on your local network that can reach the port controls
+the TV. Do not expose the port to the internet.

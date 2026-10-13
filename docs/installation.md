@@ -1,12 +1,12 @@
-# Instalação
+# Installation
 
-## Requisitos
+## Requirements
 
-- Python 3.9+ (usa `from __future__ import annotations`)
-- TV e computador na mesma rede local
-- A TV precisa estar ligada (ou com a tela apagada) e com o IP conhecido
+- Python 3.9+ (the code uses `from __future__ import annotations`)
+- TV and computer on the same local network
+- The TV must be on (or with the screen off) and you must know its IP
 
-## Passos
+## Steps
 
 ```bash
 cd tv_control
@@ -14,21 +14,22 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-A única dependência é [`androidtvremote2`](https://pypi.org/project/androidtvremote2/) (`>=0.3.2`),
-que implementa o protocolo Android TV Remote v2.
+The CLI depends on [`androidtvremote2`](https://pypi.org/project/androidtvremote2/) (`>=0.3.2`),
+which implements the Android TV Remote v2 protocol. The web server also needs FastAPI and uvicorn;
+all of them are listed in `requirements.txt`.
 
-## Configurando o IP da TV
+## Setting the TV's IP
 
-O IP padrão é `10.0.0.47`. Para mudar:
+The default IP is `10.0.0.47`. To change it:
 
 ```bash
-# por comando
+# per command
 .venv/bin/python tv.py --host 192.168.0.20 status
 
-# ou por variável de ambiente
+# or via environment variable
 export TV_HOST=192.168.0.20
 ```
 
-Dica: fixe o IP da TV no roteador (reserva DHCP) para o endereço não mudar.
+Tip: reserve the TV's IP in your router (DHCP reservation) so the address doesn't change.
 
-Próximo passo: [pareamento](pareamento.md).
+Next step: [pairing](pairing.md).

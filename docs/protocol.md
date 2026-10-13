@@ -1,50 +1,54 @@
-# Como o protocolo Android TV Remote v2 funciona
+# How the Android TV Remote v2 protocol works
 
-A TV (Google TV / Android TV) expõe um serviço de controle remoto na rede local. É o mesmo usado
-pelo app "Google TV" no celular. O projeto usa a biblioteca `androidtvremote2`, que implementa o
-protocolo; este documento explica o que acontece por baixo.
+The TV (Google TV / Android TV) exposes a remote-control service on the local network. It is the
+same one used by the "Google TV" phone app. This project uses the `androidtvremote2` library,
+which implements the protocol; this document explains what happens underneath.
 
-## Duas portas, dois papéis
+## Two ports, two roles
 
-| Porta | Função | Quando é usada |
+| Port | Role | When it is used |
 |---|---|---|
-| **6467** | Pareamento | Só em `tv.py pair` |
-| **6466** | Controle remoto | Em todo comando (`Session`) |
+| **6467** | Pairing | Only in `tv.py pair` |
+| **6466** | Remote control | Every command (`Session`) |
 
-Ambas são conexões TCP com **TLS e autenticação mútua**: a TV exige um certificado de cliente, e o
-cliente aceita o certificado (autoassinado) da TV. As mensagens trafegam como Protocol Buffers.
+Both are TCP connections with **TLS and mutual authentication**: the TV requires a client
+certificate, and the client accepts the TV's (self-signed) certificate. Messages are
+Protocol Buffers.
 
-## Certificados
+## Certificates
 
-- O cliente gera um par `cert.pem` / `key.pem` na primeira execução
-  (`async_generate_cert_if_missing`), salvo em `certs/`.
-- O **pareamento** é o ato de a TV registrar esse certificado como confiável.
-- Quem possui `key.pem` pode controlar a TV: trate como segredo.
+- The client generates a `cert.pem` / `key.pem` pair on first run
+  (`async_generate_cert_if_missing`), stored in `certs/`.
+- **Pairing** is the act of the TV registering that certificate as trusted.
+- Whoever holds `key.pem` can control the TV: treat it as a secret.
 
-## Fluxo de pareamento (porta 6467)
+## Pairing flow (port 6467)
 
-1. O cliente abre TLS com seu certificado e envia o pedido de pareamento (nome do cliente: `TV Control`).
-2. A TV mostra um código de 6 caracteres hexadecimais.
-3. O cliente envia o código; ele é validado por um *secret* derivado (SHA‑256) dos módulos/expoentes
-   dos dois certificados mais o código. Só quem viu a TV e conhece os certificados acerta.
-4. Aceito, a TV guarda o certificado do cliente.
+1. The client opens TLS with its certificate and sends the pairing request (client name:
+   `TV Control`).
+2. The TV shows a 6-character hexadecimal code.
+3. The client sends the code; it is validated against a secret derived (SHA-256) from the
+   moduli/exponents of both certificates plus the code. Only someone who saw the TV and holds the
+   certificates gets it right.
+4. Once accepted, the TV stores the client certificate.
 
-## Fluxo de controle (porta 6466)
+## Control flow (port 6466)
 
-1. TLS com o mesmo certificado. Se a TV não o conhece, a conexão é recusada (`InvalidAuth`,
-   traduzido para `NotPaired`).
-2. Troca de mensagens de configuração/versão; a TV informa `device_info`.
-3. A TV envia periodicamente **estado**: ligada ou não (`is_on`), app atual (`current_app`),
-   volume (`volume_info`). É daí que vêm `status`, `on` e `off`.
-4. O cliente envia comandos:
-   - **tecla**: `send_key_command(KEYCODE, direction)` (`SHORT`, `START_LONG`, `END_LONG`)
-   - **abrir app**: `send_launch_app_command(link_ou_pacote)`
-   - **texto**: `send_text(str)`
-5. Há *ping/pong* para manter a conexão viva.
+1. TLS with the same certificate. If the TV doesn't know it, the connection is refused
+   (`InvalidAuth`, translated to `NotPaired`).
+2. Configuration/version messages are exchanged; the TV reports its `device_info`.
+3. The TV periodically sends **state**: on or off (`is_on`), current app (`current_app`),
+   volume (`volume_info`). This is where `status`, `on` and `off` get their data.
+4. The client sends commands:
+   - **key**: `send_key_command(KEYCODE, direction)` (`SHORT`, `START_LONG`, `END_LONG`)
+   - **launch app**: `send_launch_app_command(link_or_package)`
+   - **text**: `send_text(str)`
+5. Ping/pong keeps the connection alive.
 
-## Observações
+## Notes
 
-- A TV precisa estar em standby com rede ativa para ligar por `on`/`power`; em standby profundo a
-  porta 6466 pode não responder.
-- `screen off` envia `SLEEP`: a tela apaga e a TV segue acessível. `screen on` envia `WAKEUP`.
-- Os códigos de tecla são os `KEYCODE_*` do Android (`KeyEvent`).
+- The TV must be in standby with networking active to be turned on by `on`/`power`; in deep
+  standby port 6466 may not answer.
+- `screen off` sends `SLEEP`: the screen goes dark and the TV stays reachable. `screen on` sends
+  `WAKEUP`.
+- Key codes are Android's `KEYCODE_*` (`KeyEvent`).

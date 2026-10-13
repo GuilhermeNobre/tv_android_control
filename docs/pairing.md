@@ -1,32 +1,34 @@
-# Pareamento
+# Pairing
 
-O pareamento é feito **uma única vez**. Ele cria um certificado de cliente que a TV passa a aceitar.
+Pairing is done **once**. It creates a client certificate that the TV then accepts.
 
 ```bash
 .venv/bin/python tv.py pair
 ```
 
-1. O script gera `certs/cert.pem` e `certs/key.pem` (se ainda não existirem).
-2. A TV exibe um código de 6 caracteres.
-3. Digite o código no terminal. Se estiver errado, o script pede de novo.
-4. Mensagem final: `Pareado com sucesso.`
+1. The script generates `certs/cert.pem` and `certs/key.pem` (if they don't exist yet).
+2. The TV shows a 6-character code.
+3. Type the code in the terminal. If it is wrong, the script asks again.
+4. Final message: `Pareado com sucesso.` (paired successfully).
 
-Depois disso, qualquer comando (`tv.py power`, `tv.py status`, ...) funciona sem novo pareamento.
+After that, every command (`tv.py power`, `tv.py status`, ...) works without pairing again.
 
-## Problemas comuns
+## Common problems
 
-| Sintoma | Causa provável |
+| Symptom | Likely cause |
 |---|---|
-| `TV ainda não pareada. Rode: python tv.py pair` | A TV não reconhece o certificado em `certs/`. Pareie de novo. |
-| `Não consegui conectar em <ip>` | IP errado, TV em outra rede, ou TV totalmente desligada (modo standby profundo). |
-| `Conexão fechada durante o pareamento` | A TV fechou o canal; repita `tv.py pair`. |
+| `TV ainda não pareada. Rode: python tv.py pair` (TV not paired yet) | The TV doesn't recognize the certificate in `certs/`. Pair again. |
+| `Não consegui conectar em <ip>` (could not connect) | Wrong IP, TV on another network, or TV fully off (deep standby). |
+| `Conexão fechada durante o pareamento` (connection closed during pairing) | The TV closed the channel; run `tv.py pair` again. |
 
-## Re-parear
+The CLI messages are in Portuguese.
 
-Apague `certs/cert.pem` e `certs/key.pem` e rode `tv.py pair` novamente. Se também quiser
-remover o dispositivo na TV: Configurações → Sistema → Controle remoto/Acessórios.
+## Re-pairing
 
-## Segurança
+Delete `certs/cert.pem` and `certs/key.pem` and run `tv.py pair` again. To also remove the old
+device on the TV: Settings → System → Remotes/Accessories.
 
-`certs/key.pem` é a chave privada que dá controle da TV a quem a possuir. **Não versione** a pasta
-`certs/` (ela já está no `.gitignore`).
+## Security
+
+`certs/key.pem` is the private key that gives control of the TV to whoever holds it. **Do not
+commit** the `certs/` folder (it is already in `.gitignore`).

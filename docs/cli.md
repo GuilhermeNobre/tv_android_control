@@ -1,59 +1,67 @@
-# Comandos da CLI
+# CLI commands
 
-Forma geral:
+General form:
 
 ```bash
-.venv/bin/python tv.py [--host IP] <comando> [argumentos]
+.venv/bin/python tv.py [--host IP] <command> [arguments]
 ```
 
-`--host` (ou `TV_HOST`) define o IP da TV; padrão `10.0.0.47`.
+`--host` (or `TV_HOST`) sets the TV's IP; default `10.0.0.47`.
 
-## Conexão e estado
+## Connection and state
 
-| Comando | O que faz |
+| Command | What it does |
 |---|---|
-| `pair` | Pareia com a TV (uma vez). Ver [pareamento](pareamento.md). |
-| `status` | Mostra `host`, `ligada`, `app_atual`, `volume` e `dispositivo`. |
+| `pair` | Pairs with the TV (once). See [pairing](pairing.md). |
+| `status` | Shows `host`, `ligada` (on), `app_atual` (current app), `volume` and `dispositivo` (device). |
 
-## Energia
+## Power
 
-| Comando | O que faz |
+| Command | What it does |
 |---|---|
-| `on` | Liga a TV, **somente se estiver desligada** (consulta `is_on` antes). |
-| `off` | Desliga a TV, **somente se estiver ligada**. |
-| `power` | Alterna (envia a tecla POWER sem verificar o estado). |
-| `screen off` | Apaga a tela (tecla `SLEEP`) mantendo a TV conectada na rede. |
-| `screen on` | Acende a tela (tecla `WAKEUP`). |
+| `on` | Turns the TV on, **only if it is off** (checks `is_on` first). |
+| `off` | Turns the TV off, **only if it is on**. |
+| `power` | Toggles (sends the POWER key without checking state). |
+| `screen off` | Turns the screen off (`SLEEP` key) while keeping the TV connected to the network. |
+| `screen on` | Turns the screen on (`WAKEUP` key). |
 
-`on`/`off` são idempotentes: se a TV já está no estado pedido, imprimem
-`TV já está ligada.` / `TV já está desligada.` e não fazem nada.
+`on`/`off` are idempotent: if the TV is already in the requested state they print
+`TV já está ligada.` / `TV já está desligada.` ("TV is already on/off") and do nothing.
 
-## Teclas
+## Keys
 
-Cada comando envia uma tecla do controle remoto (tabela `KEYS`, ver [código](codigo.md)):
+Each command sends a remote-control key (the `KEYS` table, see [code structure](code-structure.md)):
 
-| Grupo | Comandos |
+| Group | Commands |
 |---|---|
-| Volume | `mute`, `volup [N]`, `voldown [N]` (N = repetições, padrão 1) |
-| Navegação | `up`, `down`, `left`, `right`, `ok`, `home`, `back`, `menu` |
-| Mídia | `play` (play/pause), `next`, `prev` |
-| Canais | `ch+`, `ch-` |
+| Volume | `mute`, `volup [N]`, `voldown [N]` (N = repetitions, default 1) |
+| Navigation | `up`, `down`, `left`, `right`, `ok`, `home`, `back`, `menu` |
+| Media | `play` (play/pause), `next`, `prev` |
+| Channels | `ch+`, `ch-` |
 
-Exemplos:
+Examples:
 
 ```bash
 .venv/bin/python tv.py volup 5
 .venv/bin/python tv.py home
 ```
 
-## Apps, texto e teclas brutas
+## Apps, text and raw keys
 
-| Comando | O que faz |
+| Command | What it does |
 |---|---|
-| `app <nome>` | Abre um app. Atalhos: `youtube`, `netflix`, `primevideo`, `disney`, `spotify`, `settings`, `play`. Também aceita link ou pacote (ex.: `app https://www.youtube.com`). |
-| `text "abc"` | Digita texto no campo de texto focado na TV. |
-| `key KEYCODE` | Envia um `KEYCODE_*` bruto do Android, sem o prefixo `KEY`/`KEYCODE_` (ex.: `key HDMI_1`). |
+| `app <name>` | Opens an app. Shortcuts: `youtube`, `netflix`, `primevideo`, `disney`, `spotify`, `settings`, `play`. Also accepts a link or package (e.g. `app https://www.youtube.com`). |
+| `text "abc"` | Types text into the text field focused on the TV. |
+| `key KEYCODE` | Sends a raw Android `KEYCODE_*` without the `KEY`/`KEYCODE_` prefix (e.g. `key HDMI_1`). |
 
-## Códigos de saída
+## Exit codes
 
-`0` sucesso; `1` erro de conexão/pareamento (mensagem `Erro: ...` em stderr).
+`0` success; `1` connection/pairing error (`Erro: ...` message on stderr).
+
+## When the server is running
+
+If `server.py` is running (port 8000, or `TV_SERVER=http://host:port`), the CLI sends commands
+through it instead of opening another connection. The TV only handles one remote at a time well:
+with the server connected, a direct CLI connection was ignored (which is why `screen`/`power`
+"were not sent"). Without the server, the CLI connects directly to the TV. `key KEYCODE` and
+arbitrary app links always use the direct connection.

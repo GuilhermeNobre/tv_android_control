@@ -1,32 +1,35 @@
-# Estrutura do código
+# Code structure
 
 ```
 tv_control/
-├── tv.py                 # CLI (argparse) — ponto de entrada
+├── tv.py                 # CLI (argparse), entry point
+├── server.py             # FastAPI web server (see web-server.md)
 ├── tvcontrol/
 │   ├── __init__.py
-│   └── client.py         # acesso à TV: KEYS, APPS, SCREEN, Session, pair
-├── certs/                # cert.pem / key.pem (gerados no pareamento)
-├── requirements.txt      # androidtvremote2>=0.3.2
-└── docs/                 # esta documentação
+│   └── client.py         # TV access: KEYS, APPS, SCREEN, Session, pair
+├── web/                  # web remote page (index.html)
+├── macos/                # native macOS app (SwiftUI, SwiftPM) and build.sh
+├── certs/                # cert.pem / key.pem (generated on pairing, git-ignored)
+├── requirements.txt
+└── docs/                 # this documentation
 ```
 
 ## `tvcontrol/client.py`
 
-Camada de acesso à TV; a CLI usa só isto.
+The TV access layer; the CLI and the server use only this.
 
-| Item | Descrição |
+| Item | Description |
 |---|---|
-| `DEFAULT_HOST` | `TV_HOST` do ambiente, ou `10.0.0.47`. |
-| `CERT_DIR` | `certs/` na raiz do projeto. |
-| `APPS` | Atalho → link/pacote para `send_launch_app_command`. |
-| `KEYS` | Comando da CLI → `KEY_*` do Android (`power`, `volup`, `ok`, `home`, ...). |
+| `DEFAULT_HOST` | `TV_HOST` from the environment, or `10.0.0.47`. |
+| `CERT_DIR` | `certs/` at the project root. |
+| `APPS` | Shortcut → link/package for `send_launch_app_command`. |
+| `KEYS` | CLI command → Android `KEY_*` (`power`, `volup`, `ok`, `home`, ...). |
 | `SCREEN` | `{"off": "SLEEP", "on": "WAKEUP"}`. |
-| `TVError`, `NotPaired` | Erros tratados pela CLI. |
-| `pair(host, ask_code)` | Fluxo de pareamento; `ask_code()` devolve o código digitado. |
-| `Session` | Context manager assíncrono: `key()`, `app()`, `text()`, `status()`; expõe `remote`. |
+| `TVError`, `NotPaired` | Errors handled by the CLI. |
+| `pair(host, ask_code)` | Pairing flow; `ask_code()` returns the code the user typed. |
+| `Session` | Async context manager: `key()`, `app()`, `text()`, `status()`; exposes `remote`. |
 
-Uso programático:
+Programmatic use:
 
 ```python
 from tvcontrol.client import Session
@@ -36,15 +39,21 @@ async with Session("10.0.0.47") as tv:
     await tv.app("youtube")
 ```
 
-### Adicionar uma tecla ou app
+### Adding a key or an app
 
-- **Tecla nova:** adicione `"nome": "KEYCODE"` em `KEYS`. O comando aparece sozinho na CLI.
-- **App novo:** adicione `"nome": "link-ou-pacote"` em `APPS`; vira opção de `tv.py app nome`.
-- Qualquer outra tecla pontual: `tv.py key KEYCODE`.
+- **New key:** add `"name": "KEYCODE"` to `KEYS`. The command shows up in the CLI by itself.
+- **New app:** add `"name": "link-or-package"` to `APPS`; it becomes an option of `tv.py app name`.
+- Any other one-off key: `tv.py key KEYCODE`.
 
 ## `tv.py`
 
-- `build_parser()` cria um subcomando por entrada de `KEYS`, mais `pair`, `status`, `on`, `off`,
+- `build_parser()` creates one subcommand per `KEYS` entry, plus `pair`, `status`, `on`, `off`,
   `screen`, `key`, `app`, `text`.
-- `run(args)` abre uma `Session` e despacha o comando; espera 0,3 s antes de fechar para o comando sair.
-- `main()` converte `TVError` em `Erro: ...` + código de saída 1.
+- `run(args)` opens a `Session` and dispatches the command; it waits 0.3 s before closing so the
+  command goes out. When `server.py` is running, commands go through it first (see [cli.md](cli.md)).
+- `main()` turns `TVError` into `Erro: ...` and exit code 1.
+
+## `server.py`, `web/` and `macos/`
+
+See [web-server.md](web-server.md). The macOS app (`macos/`) is a SwiftUI remote window plus a
+menu-bar icon; it starts `server.py` itself (bound to 127.0.0.1 only) when it isn't running.

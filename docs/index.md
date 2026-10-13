@@ -1,10 +1,12 @@
-# Documentação — TV Control
+# Documentation — TV Control
 
-Controle local da TV TCL 43P755 (Google TV) via protocolo Android TV Remote v2.
+Local control of the TCL 43P755 (Google TV) over the Android TV Remote v2 protocol.
 
-1. [Instalação](instalacao.md)
-2. [Pareamento](pareamento.md)
-3. [Comandos da CLI](cli.md)
-4. [Como o protocolo funciona](protocolo.md)
-5. [Estrutura do código](codigo.md)
-6. [Site / webserver](site.md) 
+1. [Installation](installation.md)
+2. [Pairing](pairing.md)
+3. [CLI commands](cli.md)
+4. [How the protocol works](protocol.md)
+5. [Code structure](code-structure.md)
+6. [Web server](web-server.md)
+
+Portuguese README: [README.pt-BR.md](README.pt-BR.md)
