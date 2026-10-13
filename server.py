@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from pydantic import BaseModel
 from tvcontrol import client
 from tvcontrol.client import APPS, KEYS, SCREEN, NotPaired, Session, TVError
 
+log = logging.getLogger("uvicorn.error")
 WEB_DIR = Path(__file__).resolve().parent / "web"
 
 
@@ -148,7 +150,14 @@ class Text(BaseModel):
 
 @app.post("/api/text")
 async def text(body: Text):
-    return await _run(lambda s: _after(s, s.text(body.value)))
+    async def go(s: Session):
+        r = s.remote
+        proto = getattr(r, "_remote_message_protocol", None)
+        log.info("text: ime_counter=%s field_counter=%s app=%s",
+                 getattr(proto, "ime_counter", "?"), getattr(proto, "ime_field_counter", "?"), r.current_app)
+        return await _after(s, s.text(body.value))
+
+    return await _run(go)
 
 
 @app.get("/")
