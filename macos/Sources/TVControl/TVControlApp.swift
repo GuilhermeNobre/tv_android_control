@@ -35,7 +35,7 @@ struct TVControlApp: App {
             .buttonStyle(.link)
             .padding(.horizontal, 16).padding(.vertical, 8)
         } label: {
-            Image(systemName: remote.tvOn == true ? "tv.fill" : "tv")
+            Image(nsImage: MenuBarIcon.image)
         }
         .menuBarExtraStyle(.window)
     }
