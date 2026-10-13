@@ -9,10 +9,61 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
+import os
 import sys
+import urllib.error
+import urllib.request
 
 from tvcontrol import client
 from tvcontrol.client import APPS, KEYS, SCREEN, Session, TVError
+
+
+SERVER_URL = os.environ.get("TV_SERVER", "http://127.0.0.1:8000")
+
+
+def via_server(args: argparse.Namespace) -> bool:
+    """Se o server.py estiver rodando, manda o comando por ele e devolve True.
+
+    A TV só atende bem UM controle remoto por vez: com o server.py conectado, uma
+    segunda conexão direta da CLI é ignorada. Por isso a CLI usa o servidor quando existe.
+    """
+    c = args.cmd
+    if c == "screen":
+        path, body = f"/api/screen/{args.state}", None
+    elif c in ("on", "off"):
+        path, body = f"/api/power/{c}", None
+    elif c in KEYS:
+        path, body = f"/api/key/{c}?times={getattr(args, 'times', 1)}", None
+    elif c == "app" and args.name in APPS:
+        path, body = f"/api/app/{args.name}", None
+    elif c == "text":
+        path, body = "/api/text", {"value": args.value}
+    elif c == "status":
+        path, body = "/api/status", None
+    else:
+        return False
+    method = "GET" if c == "status" else "POST"
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(SERVER_URL + path, data=data, method=method,
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            out = json.load(r)
+    except urllib.error.HTTPError as e:
+        try:
+            detail = json.load(e).get("detail", e.reason)
+        except Exception:
+            detail = e.reason
+        raise TVError(f"servidor respondeu {e.code}: {detail}")
+    except OSError:
+        return False  # servidor fora do ar: conexão direta
+    if c == "status":
+        for k in ("host", "ligada", "app_atual", "volume", "dispositivo"):
+            print(f"{k}: {out.get(k)}")
+    elif c in ("on", "off"):
+        print(f"TV {'ligada' if out.get('ligada') else 'desligada'}.")
+    return True
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -21,6 +72,9 @@ async def run(args: argparse.Namespace) -> None:
         print(f"Pareando com {host}. Um código de 6 caracteres vai aparecer na TV.")
         await client.pair(host, lambda: input("Código mostrado na TV: ").strip())
         print("Pareado com sucesso.")
+        return
+
+    if args.host == client.DEFAULT_HOST and via_server(args):
         return
 
     async with Session(host) as tv:
