@@ -1,4 +1,4 @@
-"""Camada de acesso à TV (Android TV Remote v2). A CLI usa só isto."""
+"""TV access layer (Android TV Remote v2). The CLI uses only this."""
 from __future__ import annotations
 
 import os
@@ -15,7 +15,7 @@ DEFAULT_HOST = os.environ.get("TV_HOST", "10.0.0.47")
 CERT_DIR = Path(__file__).resolve().parent.parent / "certs"
 CLIENT_NAME = "TV Control"
 
-# Atalhos de apps (nome -> link/pacote aceito por send_launch_app_command)
+# App shortcuts (name -> link/package accepted by send_launch_app_command)
 APPS = {
     "youtube": "https://www.youtube.com",
     "netflix": "https://www.netflix.com/title",
@@ -26,7 +26,7 @@ APPS = {
     "play": "market://launch?id=com.google.android.youtube.tv",
 }
 
-# Comando da CLI -> KEY_* do Android
+# CLI command -> Android KEY_*
 KEYS = {
     "power": "POWER",
     "mute": "MUTE",
@@ -49,7 +49,7 @@ KEYS = {
 }
 
 
-# `tv.py screen on|off`: apaga/acende a tela mantendo a TV acessível na rede
+# `tv.py screen on|off`: turns the screen off/on while keeping the TV reachable on the network
 SCREEN = {"off": "SLEEP", "on": "WAKEUP"}
 
 
@@ -72,7 +72,7 @@ def _remote(host: str) -> AndroidTVRemote:
 
 
 async def pair(host: str, ask_code) -> None:
-    """Pareamento: a TV mostra um código; `ask_code()` devolve o que o usuário digitou."""
+    """Pairing: the TV shows a code; `ask_code()` returns what the user typed."""
     r = _remote(host)
     await r.async_generate_cert_if_missing()
     await r.async_start_pairing()
@@ -88,7 +88,7 @@ async def pair(host: str, ask_code) -> None:
 
 
 class Session:
-    """Conexão assíncrona: `async with Session(host) as tv: await tv.key("mute")`."""
+    """Async connection: `async with Session(host) as tv: await tv.key("mute")`."""
 
     def __init__(self, host: str = DEFAULT_HOST):
         self.host = host

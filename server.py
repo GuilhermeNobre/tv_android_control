@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Servidor web do controle remoto da TV (FastAPI).
+"""Web server for the TV remote control (FastAPI).
 
-Uso:  .venv/bin/python server.py [--host 0.0.0.0] [--port 8000] [--tv 10.0.0.47]
-ATENÇÃO: sem autenticação — qualquer um na sua rede local controla a TV.
+Usage: .venv/bin/python server.py [--host 0.0.0.0] [--port 8000] [--tv 10.0.0.47]
+WARNING: no authentication - anyone on your local network can control the TV.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ WEB_DIR = Path(__file__).resolve().parent / "web"
 
 
 class TV:
-    """Mantém uma conexão única e reconecta sob demanda."""
+    """Keeps a single connection and reconnects on demand."""
 
     def __init__(self, host: str):
         self.host = host
@@ -48,7 +48,7 @@ class TV:
                 pass
 
     async def call(self, fn):
-        """Executa fn(session); em falha de conexão, reconecta e tenta de novo uma vez."""
+        """Runs fn(session); on a connection failure, reconnects and retries once."""
         async with self._lock:
             for attempt in (1, 2):
                 try:
@@ -89,7 +89,7 @@ async def _run(fn):
 
 async def _after(s: Session, coro):
     await coro
-    await asyncio.sleep(0.2)  # deixa o comando sair
+    await asyncio.sleep(0.2)  # let the command go out
     return {"ok": True}
 
 

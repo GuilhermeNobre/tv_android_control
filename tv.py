@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""CLI para controlar a TV TCL 43P755 (Google TV) pela rede local.
+"""CLI to control the TCL 43P755 TV (Google TV) over the local network.
 
-Uso:  python tv.py pair | status | screen on|off | power | mute | volup [N] | voldown [N]
+Usage: python tv.py pair | status | screen on|off | power | mute | volup [N] | voldown [N]
       python tv.py up|down|left|right|ok|home|back|menu|play|next|prev
       python tv.py app youtube|netflix|... | text "abc" | key KEYCODE
 """
@@ -23,10 +23,10 @@ SERVER_URL = os.environ.get("TV_SERVER", "http://127.0.0.1:8000")
 
 
 def via_server(args: argparse.Namespace) -> bool:
-    """Se o server.py estiver rodando, manda o comando por ele e devolve True.
+    """If server.py is running, sends the command through it and returns True.
 
-    A TV só atende bem UM controle remoto por vez: com o server.py conectado, uma
-    segunda conexão direta da CLI é ignorada. Por isso a CLI usa o servidor quando existe.
+    The TV only serves ONE remote at a time: with server.py connected, a second
+    direct connection from the CLI is ignored. So the CLI uses the server when it exists.
     """
     c = args.cmd
     if c == "screen":
@@ -57,7 +57,7 @@ def via_server(args: argparse.Namespace) -> bool:
             detail = e.reason
         raise TVError(f"servidor respondeu {e.code}: {detail}")
     except OSError:
-        return False  # servidor fora do ar: conexão direta
+        return False  # server is down: connect directly
     if c == "status":
         for k in ("host", "ligada", "app_atual", "volume", "dispositivo"):
             print(f"{k}: {out.get(k)}")
@@ -88,8 +88,8 @@ async def run(args: argparse.Namespace) -> None:
             else:
                 await tv.key("power")
         elif args.cmd == "screen":
-            # igual ao servidor web (conexão persistente): dá tempo para a TV
-            # terminar o handshake antes da tecla e para processá-la antes de fechar
+            # same as the web server (persistent connection): give the TV time to
+            # finish the handshake before the key and to process it before closing
             await asyncio.sleep(0.5)
             await tv.key(SCREEN[args.state])
             await asyncio.sleep(1.5)
@@ -104,7 +104,7 @@ async def run(args: argparse.Namespace) -> None:
             await tv.app(args.name)
         elif args.cmd == "text":
             await tv.text(args.value)
-        await asyncio.sleep(0.3)  # deixa o comando sair antes de fechar
+        await asyncio.sleep(0.3)  # let the command go out before closing
 
 
 def build_parser() -> argparse.ArgumentParser:
