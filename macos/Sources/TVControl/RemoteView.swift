@@ -48,7 +48,12 @@ private struct PadButton: ButtonStyle {
 
 struct RemoteView: View {
     @ObservedObject var remote: Remote
-    @State private var tab: Tab = .remote
+    /// Espaço extra no topo para os botões da janela (semáforos) quando não há barra de título.
+    var topInset: CGFloat = 0
+    // `-initialTab apps|texto` na linha de comando abre direto numa aba (útil para testes).
+    @State private var tab: Tab = Tab.allCases.first {
+        $0.rawValue.lowercased() == UserDefaults.standard.string(forKey: "initialTab")?.lowercased()
+    } ?? .remote
     @State private var text = ""
     @State private var slide: CGFloat = 1
 
@@ -91,7 +96,6 @@ struct RemoteView: View {
                     case .text: textTab.transition(slideTransition)
                     }
                 }
-                .clipped()
 
                 if let m = remote.message {
                     Label(m, systemImage: "exclamationmark.circle.fill")
@@ -100,7 +104,9 @@ struct RemoteView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+        .padding(.top, 16 + topInset)
         .frame(width: 320)
         .background(alignment: .top) {
             // Brilho suave no topo: azul quando a TV está ligada, quase neutro quando desligada.
@@ -289,15 +295,32 @@ struct RemoteView: View {
     // MARK: Aba Apps
 
     private var appsTab: some View {
-        Card {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 10) {
-                ForEach(remote.apps, id: \.self) { id in appTile(id, compact: false) }
+        let rows = stride(from: 0, to: remote.apps.count, by: 3).map {
+            Array(remote.apps[$0..<min($0 + 3, remote.apps.count)])
+        }
+        return VStack(spacing: 10) {
+            Card {
+                if remote.apps.isEmpty {
+                    Text("Nenhum app disponível").font(.callout).foregroundStyle(.secondary)
+                } else {
+                    // Linhas fixas (não LazyVGrid) para a altura ser calculada de uma vez.
+                    VStack(spacing: 14) {
+                        ForEach(rows.indices, id: \.self) { r in
+                            HStack(alignment: .top, spacing: 8) {
+                                ForEach(rows[r], id: \.self) { id in appTile(id, compact: false) }
+                                ForEach(0..<(3 - rows[r].count), id: \.self) { _ in
+                                    Color.clear.frame(maxWidth: .infinity, maxHeight: 1)
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            if remote.apps.isEmpty {
-                Text("Nenhum app disponível").font(.callout).foregroundStyle(.secondary)
-            }
-            Text("Clique com o botão direito para fixar nos favoritos.")
-                .font(.caption2).foregroundStyle(.secondary).padding(.top, 6)
+            Text("Clique com o botão direito num app para fixar nos favoritos.")
+                .font(.caption).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
         }
     }
 

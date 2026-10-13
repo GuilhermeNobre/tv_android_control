@@ -13,11 +13,14 @@ struct TVControlApp: App {
 
     var body: some Scene {
         Window("TV Control", id: "remote") {
-            RemoteView(remote: remote)
+            RemoteView(remote: remote, topInset: 14)
+                .ignoresSafeArea(.container, edges: .top)
+                .background(WindowChrome())
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     remote.shutdown()
                 }
         }
+        .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
 
         // Popover nativo (material translúcido do sistema) com o mesmo controle da janela.
@@ -39,4 +42,21 @@ struct TVControlApp: App {
         }
         .menuBarExtraStyle(.window)
     }
+}
+
+/// Deixa a janela arrastável pelo fundo e sem título, mantendo só os botões do sistema.
+private struct WindowChrome: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let v = NSView()
+        DispatchQueue.main.async {
+            guard let w = v.window else { return }
+            w.isMovableByWindowBackground = true
+            w.titlebarAppearsTransparent = true
+            w.titleVisibility = .hidden
+            w.styleMask.insert(.fullSizeContentView)
+            w.titlebarSeparatorStyle = .none
+        }
+        return v
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
