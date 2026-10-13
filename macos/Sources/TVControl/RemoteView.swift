@@ -3,6 +3,7 @@ import SwiftUI
 private enum Tab: String, CaseIterable, Identifiable {
     case remote = "Controle", apps = "Apps", text = "Texto"
     var id: String { rawValue }
+    var order: Int { Tab.allCases.firstIndex(of: self) ?? 0 }
     var symbol: String {
         switch self {
         case .remote: return "dpad"
@@ -49,6 +50,7 @@ struct RemoteView: View {
     @ObservedObject var remote: Remote
     @State private var tab: Tab = .remote
     @State private var text = ""
+    @State private var slide: CGFloat = 1
 
     var body: some View {
         VStack(spacing: 12) {
@@ -70,17 +72,26 @@ struct RemoteView: View {
                 .frame(maxWidth: .infinity, minHeight: 200)
             case .ready:
                 header
-                Picker("", selection: $tab) {
+                Picker("", selection: Binding(
+                    get: { tab },
+                    set: { new in
+                        slide = new.order > tab.order ? 1 : -1
+                        withAnimation(.easeInOut(duration: 0.28)) { tab = new }
+                    }
+                )) {
                     ForEach(Tab.allCases) { t in Label(t.rawValue, systemImage: t.symbol).tag(t) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
 
-                switch tab {
-                case .remote: remoteTab
-                case .apps: appsTab
-                case .text: textTab
+                ZStack {
+                    switch tab {
+                    case .remote: remoteTab.transition(slideTransition)
+                    case .apps: appsTab.transition(slideTransition)
+                    case .text: textTab.transition(slideTransition)
+                    }
                 }
+                .clipped()
 
                 if let m = remote.message {
                     Label(m, systemImage: "exclamationmark.circle.fill")
@@ -91,44 +102,60 @@ struct RemoteView: View {
         }
         .padding(16)
         .frame(width: 320)
+        .background(alignment: .top) {
+            // Brilho suave no topo: azul quando a TV está ligada, quase neutro quando desligada.
+            LinearGradient(colors: [Color.accentColor.opacity(remote.tvOn == true ? 0.20 : 0.05), .clear],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 220)
+                .animation(.easeInOut(duration: 0.6), value: remote.tvOn)
+        }
+    }
+
+    private var slideTransition: AnyTransition {
+        .asymmetric(
+            insertion: .offset(x: 36 * slide).combined(with: .opacity),
+            removal: .offset(x: -36 * slide).combined(with: .opacity)
+        )
     }
 
     // MARK: Cabeçalho
 
     private var header: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(statusColor.opacity(0.18))
-                Image(systemName: remote.tvOn == true ? "tv.fill" : "tv")
-                    .foregroundStyle(statusColor)
-            }
-            .frame(width: 36, height: 36)
+        VStack(spacing: 12) {
+            TVPreview(isOn: remote.tvOn, appId: AppCatalog.id(forPackage: remote.currentApp),
+                      appName: AppCatalog.name(forPackage: remote.currentApp))
+                .frame(height: 112)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(remote.deviceName ?? "Minha TV").font(.headline).lineLimit(1)
-                Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Spacer(minLength: 4)
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(remote.deviceName ?? "Minha TV").font(.headline).lineLimit(1)
+                    HStack(spacing: 5) {
+                        Circle().fill(statusColor).frame(width: 7, height: 7)
+                        Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 4)
 
-            Menu {
-                Button("Atualizar") { Task { await remote.refresh() } }
-                Divider()
-                Button("Apagar a tela") { remote.setScreen(false) }
-                Button("Acender a tela") { remote.setScreen(true) }
-            } label: {
-                Image(systemName: "ellipsis.circle").font(.title3).foregroundStyle(.secondary)
-            }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                Menu {
+                    Button("Atualizar") { Task { await remote.refresh() } }
+                    Divider()
+                    Button("Apagar a tela") { remote.setScreen(false) }
+                    Button("Acender a tela") { remote.setScreen(true) }
+                } label: {
+                    Image(systemName: "ellipsis.circle").font(.title3).foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
 
-            Button { remote.togglePower() } label: {
-                Image(systemName: "power").font(.system(size: 14, weight: .semibold))
-                    .frame(width: 34, height: 34)
+                Button { remote.togglePower() } label: {
+                    Image(systemName: "power").font(.system(size: 15, weight: .semibold))
+                        .frame(width: 38, height: 38)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(remote.tvOn == true ? Color.white : Color.primary)
+                .background(Circle().fill(remote.tvOn == true ? Color.green : Color.primary.opacity(0.1)))
+                .animation(.easeInOut(duration: 0.3), value: remote.tvOn)
+                .help("Liga / desliga a TV")
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(remote.tvOn == true ? Color.white : Color.primary)
-            .background(Circle().fill(remote.tvOn == true ? Color.green : Color.primary.opacity(0.1)))
-            .help("Liga / desliga a TV")
         }
     }
 
@@ -196,18 +223,16 @@ struct RemoteView: View {
                 Slider(
                     value: Binding(
                         get: { Double(remote.volumeDisplay ?? remote.volume?.level ?? 0) },
-                        set: { remote.setVolume(Int($0.rounded())) }
+                        set: { new in
+                            let n = Int(new.rounded())
+                            if n != (remote.volumeDisplay ?? remote.volume?.level) { remote.setVolume(n) }
+                        }
                     ),
-                    in: 0...max, step: 1
+                    in: 0...max
                 )
                 .tint(muted ? .orange : .accentColor)
                 .disabled(remote.volume?.level == nil)
                 .help("Arraste para ajustar o volume")
-
-                Button { remote.key("voldown") } label: { Image(systemName: "minus").frame(width: 24, height: 22) }
-                    .buttonStyle(PadButton()).keyboardShortcut("-", modifiers: []).help("Volume −")
-                Button { remote.key("volup") } label: { Image(systemName: "plus").frame(width: 24, height: 22) }
-                    .buttonStyle(PadButton()).keyboardShortcut("=", modifiers: []).help("Volume +")
 
                 Text(level.map(String.init) ?? "—")
                     .font(.system(.body, design: .rounded).weight(.semibold))
@@ -337,10 +362,8 @@ private struct BrandTile: View {
             switch info.glyph {
             case .svg(let d):
                 SVGShape(d: d).fill(info.ink).frame(width: size * 0.62, height: size * 0.62)
-            case .text(let t):
-                Text(t).font(.system(size: size * 0.26, weight: .heavy, design: .rounded))
-                    .foregroundStyle(info.ink).minimumScaleFactor(0.6).lineLimit(1)
-                    .padding(.horizontal, 3)
+            case .multi(let logo):
+                MultiLogoView(logo: logo).frame(width: size * 0.82, height: size * 0.5)
             case .symbol(let s):
                 Image(systemName: s).font(.system(size: size * 0.45, weight: .medium)).foregroundStyle(info.ink)
             }
@@ -349,5 +372,67 @@ private struct BrandTile: View {
         .overlay(RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
             .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+    }
+}
+
+/// TV pequena: tela acesa com o app atual, ou preta quando desligada.
+private struct TVPreview: View {
+    let isOn: Bool?
+    let appId: String?
+    let appName: String?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color(white: 0.08))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(screen)
+                    .padding(5)
+                content.padding(5)
+                // reflexo
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(LinearGradient(colors: [.white.opacity(isOn == true ? 0.16 : 0.08), .clear],
+                                         startPoint: .topLeading, endPoint: .center))
+                    .padding(5)
+                    .allowsHitTesting(false)
+            }
+            .frame(width: 148, height: 84)
+            .shadow(color: (isOn == true ? Color.accentColor : .black).opacity(0.35), radius: 12, y: 4)
+
+            // pé da TV
+            RoundedRectangle(cornerRadius: 2).fill(Color(white: 0.25)).frame(width: 38, height: 5).padding(.top, 3)
+        }
+        .animation(.easeInOut(duration: 0.45), value: isOn)
+        .animation(.easeInOut(duration: 0.35), value: appId)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(isOn == true ? "TV ligada" : isOn == false ? "TV desligada" : "TV sem resposta")
+    }
+
+    private var screen: AnyShapeStyle {
+        switch isOn {
+        case true?:
+            let base = appId.map { AppCatalog.info($0).tile } ?? Color.accentColor
+            let c = base == .white || base == .black ? Color.accentColor : base
+            return AnyShapeStyle(LinearGradient(colors: [c.opacity(0.95), c.opacity(0.55)],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing))
+        default:
+            return AnyShapeStyle(Color.black)
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch isOn {
+        case true?:
+            VStack(spacing: 4) {
+                if let id = appId { BrandTile(info: AppCatalog.info(id), size: 34) }
+                else { Image(systemName: "house.fill").font(.title2).foregroundStyle(.white.opacity(0.9)) }
+                Text(appName ?? "Ligada").font(.caption2.weight(.medium)).foregroundStyle(.white).lineLimit(1)
+            }
+            .transition(.opacity)
+        case false?:
+            Image(systemName: "power").font(.title3).foregroundStyle(.white.opacity(0.18)).transition(.opacity)
+        case nil:
+            Image(systemName: "wifi.exclamationmark").font(.title3).foregroundStyle(.orange.opacity(0.8)).transition(.opacity)
+        }
     }
 }
