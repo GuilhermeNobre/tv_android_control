@@ -24,3 +24,11 @@ Para novos comandos/apps: edite `KEYS` e `APPS` em `tvcontrol/client.py`.
     .venv/bin/python server.py            # escuta em 0.0.0.0:8000 (opções: --port, --host, --tv)
 
 Abra `http://<IP-do-computador>:8000` no celular (mesma rede Wi-Fi). **Sem autenticação**: quem estiver na sua rede local controla a TV.
+
+## App para macOS
+
+App nativo (SwiftUI): janela de controle remoto + ícone na barra de menus. Ele inicia o `server.py` sozinho (só em 127.0.0.1) se não estiver rodando.
+
+    macos/build.sh && open macos/build/TVControl.app
+
+Precisa só das Command Line Tools (`xcode-select --install`) e do `.venv` acima. Log do servidor: `~/Library/Logs/TVControl-server.log`.
