@@ -1,34 +1,43 @@
 # TV Control — TCL 43P755 (Google TV)
 
-Setup (uma vez):
+Local control of a TCL 43P755 (Google TV) over the Android TV Remote v2 protocol: CLI, web
+interface and native macOS app.
+
+> 🇧🇷 Versão em português: [docs/README.pt-BR.md](docs/README.pt-BR.md)
+
+Setup (once):
+
     python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-Pareamento (uma vez): `.venv/bin/python tv.py pair` e digite o código mostrado na TV.
-Depois: `.venv/bin/python tv.py power | mute | volup 5 | home | app youtube | status | text "olá"`.
+Pairing (once): `.venv/bin/python tv.py pair` and type the code shown on the TV.
+Then: `.venv/bin/python tv.py power | mute | volup 5 | home | app youtube | status | text "hello"`.
 
-IP padrão 10.0.0.47 (mude com `--host` ou `TV_HOST`). Certificados ficam em `certs/`.
-Para novos comandos/apps: edite `KEYS` e `APPS` em `tvcontrol/client.py`.
+Default IP is 10.0.0.47 (change it with `--host` or `TV_HOST`). Certificates live in `certs/`.
+For new commands/apps: edit `KEYS` and `APPS` in `tvcontrol/client.py`.
 
-## Documentação
+## Documentation
 
-- [Instalação](docs/instalacao.md)
-- [Pareamento](docs/pareamento.md)
-- [Comandos da CLI](docs/cli.md) (`on`, `off`, `screen on|off`, teclas, apps, texto)
-- [Como o protocolo funciona](docs/protocolo.md) (portas 6467/6466, certificados)
-- [Estrutura do código](docs/codigo.md)
-- [Site / webserver](docs/site.md)
+- [Installation](docs/installation.md)
+- [Pairing](docs/pairing.md)
+- [CLI commands](docs/cli.md) (`on`, `off`, `screen on|off`, keys, apps, text)
+- [How the protocol works](docs/protocol.md) (ports 6467/6466, certificates)
+- [Code structure](docs/code-structure.md)
+- [Web server](docs/web-server.md)
 
-## Interface web (celular)
+## Web interface (phone)
 
     .venv/bin/pip install -r requirements.txt
-    .venv/bin/python server.py            # escuta em 0.0.0.0:8000 (opções: --port, --host, --tv)
+    .venv/bin/python server.py            # listens on 0.0.0.0:8000 (options: --port, --host, --tv)
 
-Abra `http://<IP-do-computador>:8000` no celular (mesma rede Wi-Fi). **Sem autenticação**: quem estiver na sua rede local controla a TV.
+Open `http://<computer-IP>:8000` on your phone (same Wi-Fi network). **No authentication**: anyone
+on your local network can control the TV.
 
-## App para macOS
+## macOS app
 
-App nativo (SwiftUI): janela de controle remoto + ícone na barra de menus. Ele inicia o `server.py` sozinho (só em 127.0.0.1) se não estiver rodando.
+Native app (SwiftUI): remote-control window plus a menu-bar icon. It starts `server.py` by itself
+(on 127.0.0.1 only) if it isn't running.
 
     macos/build.sh && open macos/build/TVControl.app
 
-Precisa só das Command Line Tools (`xcode-select --install`) e do `.venv` acima. Log do servidor: `~/Library/Logs/TVControl-server.log`.
+Needs only the Command Line Tools (`xcode-select --install`) and the `.venv` above. Server log:
+`~/Library/Logs/TVControl-server.log`.
