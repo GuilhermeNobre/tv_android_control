@@ -48,6 +48,10 @@ KEYS = {
 }
 
 
+# `tv.py screen on|off`: apaga/acende a tela mantendo a TV acessível na rede
+SCREEN = {"off": "SLEEP", "on": "WAKEUP"}
+
+
 class TVError(Exception):
     pass
 

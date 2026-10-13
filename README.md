@@ -16,7 +16,7 @@ Para novos comandos/apps: edite `KEYS` e `APPS` em `tvcontrol/client.py`.
 - [Comandos da CLI](docs/cli.md) (`on`, `off`, `screen on|off`, teclas, apps, texto)
 - [Como o protocolo funciona](docs/protocolo.md) (portas 6467/6466, certificados)
 - [Estrutura do código](docs/codigo.md)
-- [Site / webserver](docs/site.md) (reservado)
+- [Site / webserver](docs/site.md)
 
 ## Interface web (celular)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CLI para controlar a TV TCL 43P755 (Google TV) pela rede local.
 
-Uso:  python tv.py pair | status | power | mute | volup [N] | voldown [N]
+Uso:  python tv.py pair | status | screen on|off | power | mute | volup [N] | voldown [N]
       python tv.py up|down|left|right|ok|home|back|menu|play|next|prev
       python tv.py app youtube|netflix|... | text "abc" | key KEYCODE
 """
@@ -12,7 +12,7 @@ import asyncio
 import sys
 
 from tvcontrol import client
-from tvcontrol.client import APPS, KEYS, Session, TVError
+from tvcontrol.client import APPS, KEYS, SCREEN, Session, TVError
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -27,6 +27,18 @@ async def run(args: argparse.Namespace) -> None:
         if args.cmd == "status":
             for k, v in tv.status().items():
                 print(f"{k}: {v}")
+        elif args.cmd in ("on", "off"):
+            want = args.cmd == "on"
+            if tv.remote.is_on == want:
+                print(f"TV já está {'ligada' if want else 'desligada'}.")
+            else:
+                await tv.key("power")
+        elif args.cmd == "screen":
+            # igual ao servidor web (conexão persistente): dá tempo para a TV
+            # terminar o handshake antes da tecla e para processá-la antes de fechar
+            await asyncio.sleep(0.5)
+            await tv.key(SCREEN[args.state])
+            await asyncio.sleep(1.5)
         elif args.cmd in KEYS:
             n = getattr(args, "times", 1)
             for _ in range(n):
@@ -47,6 +59,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("pair", help="parear com a TV (uma vez)")
     sub.add_parser("status", help="mostrar estado da TV")
+    sp = sub.add_parser("screen", help="apagar/acender a tela, mantendo a TV conectada")
+    sp.add_argument("state", choices=list(SCREEN))
+    sub.add_parser("on", help="ligar (só se estiver desligada)")
+    sub.add_parser("off", help="desligar (só se estiver ligada)")
     for name in KEYS:
         sp = sub.add_parser(name, help=f"tecla {name}")
         if name in ("volup", "voldown"):
