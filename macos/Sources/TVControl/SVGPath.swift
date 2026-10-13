@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Converte o atributo `d` de um <path> SVG em SwiftUI.Path (M L H V C S Q T A Z, abs/rel).
+/// Converts the `d` attribute of an SVG <path> into a SwiftUI.Path (M L H V C S Q T A Z, abs/rel).
 enum SVGPath {
     static func parse(_ d: String) -> Path {
         var path = Path()
         var t = Tokenizer(d)
         var cur = CGPoint.zero, start = CGPoint.zero
-        var lastC: CGPoint?, lastQ: CGPoint?   // pontos de controle p/ S e T
+        var lastC: CGPoint?, lastQ: CGPoint?   // control points for S and T
         var cmd: Character = "M"
 
         while let c = t.nextCommand(default: cmd) {
@@ -20,7 +20,7 @@ enum SVGPath {
             case "m":
                 guard let x = t.num(), let y = t.num() else { return path }
                 cur = pt(x, y); start = cur; path.move(to: cur)
-                cmd = rel ? "l" : "L"   // pares seguintes viram lineto
+                cmd = rel ? "l" : "L"   // following pairs become lineto
             case "l":
                 guard let x = t.num(), let y = t.num() else { return path }
                 cur = pt(x, y); path.addLine(to: cur)
@@ -66,7 +66,7 @@ enum SVGPath {
         return path
     }
 
-    /// Arco SVG (parametrização por endpoints) → curvas de Bézier cúbicas.
+    /// SVG arc (endpoint parameterization) → cubic Bézier curves.
     private static func addArc(_ path: inout Path, from p0: CGPoint, to p1: CGPoint,
                                rx rx0: Double, ry ry0: Double, rotation: Double, large: Bool, sweep: Bool) {
         var rx = abs(rx0), ry = abs(ry0)
@@ -120,7 +120,7 @@ enum SVGPath {
 
         mutating func skipSep() { while i < s.count, s[i] == " " || s[i] == "," || s[i] == "\n" || s[i] == "\t" { i += 1 } }
 
-        /// Próximo comando; se houver número pendente, repete `default` (comando implícito).
+        /// Next command; if a number is pending, repeats `default` (implicit command).
         mutating func nextCommand(default d: Character) -> Character? {
             skipSep()
             guard i < s.count else { return nil }
@@ -143,7 +143,7 @@ enum SVGPath {
             return i > st ? Double(String(s[st..<i])) : nil
         }
 
-        /// Flags de arco podem vir coladas ("a1 1 0 011 1").
+        /// Arc flags may come glued together ("a1 1 0 011 1").
         mutating func flag() -> Bool? {
             skipSep()
             guard i < s.count, s[i] == "0" || s[i] == "1" else { return nil }
@@ -153,7 +153,7 @@ enum SVGPath {
     }
 }
 
-/// Forma SVG escalada para caber no retângulo (viewBox quadrado de 24 unidades por padrão).
+/// SVG shape scaled to fit the rectangle (square viewBox of 24 units by default).
 struct SVGShape: Shape {
     let d: String
     var viewBox: CGFloat = 24

@@ -1,6 +1,6 @@
 import AppKit
 
-/// Controle remoto monocromático (template) para a barra de menus — mesmo desenho do ícone do app.
+/// Monochrome (template) remote control for the menu bar — same drawing as the app icon.
 enum MenuBarIcon {
     static let image: NSImage = {
         let img = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
@@ -11,7 +11,7 @@ enum MenuBarIcon {
             ctx.setFillColor(NSColor.black.cgColor)
             ctx.addPath(CGPath(roundedRect: body, cornerWidth: bw * 0.42, cornerHeight: bw * 0.42, transform: nil))
             ctx.fillPath()
-            // recortes transparentes
+            // transparent cut-outs
             ctx.setBlendMode(.clear)
             func dot(_ x: CGFloat, _ y: CGFloat, _ rad: CGFloat) {
                 ctx.fillEllipse(in: CGRect(x: r.minX + x * r.width - rad, y: r.minY + y * r.height - rad,

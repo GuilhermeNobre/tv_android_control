@@ -1,12 +1,12 @@
 import Foundation
 
-/// Descobre a pasta do projeto e inicia o server.py quando ele não está rodando.
+/// Finds the project folder and starts server.py when it isn't running.
 @MainActor
 final class ServerManager {
     private var process: Process?
     let port = 8000
 
-    /// Pasta do projeto: Info.plist (gravada pelo build.sh) ou defaults `projectRoot`.
+    /// Project folder: Info.plist (written by build.sh) or the `projectRoot` default.
     var projectRoot: String? {
         let candidates = [
             UserDefaults.standard.string(forKey: "projectRoot"),
@@ -17,7 +17,7 @@ final class ServerManager {
         }
     }
 
-    /// Inicia o servidor (só em 127.0.0.1) e devolve uma mensagem de erro se falhar.
+    /// Starts the server (127.0.0.1 only) and returns an error message on failure.
     func start() -> String? {
         guard let root = projectRoot else {
             return "Não achei a pasta do projeto (server.py). Rode macos/build.sh de novo."
@@ -46,7 +46,7 @@ final class ServerManager {
         }
     }
 
-    /// Encerra o servidor, mas só se foi este app que o iniciou.
+    /// Stops the server, but only if this app started it.
     func stop() {
         process?.terminate()
         process = nil

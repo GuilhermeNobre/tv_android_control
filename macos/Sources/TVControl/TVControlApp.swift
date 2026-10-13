@@ -7,7 +7,7 @@ struct TVControlApp: App {
 
     init() {
         NSApplication.shared.setActivationPolicy(.regular)
-        // Inicia o servidor já no launch, mesmo que a janela ainda não tenha aparecido.
+        // Start the server at launch, even before the window has appeared.
         Task { @MainActor in await Remote.shared.boot() }
     }
 
@@ -22,7 +22,7 @@ struct TVControlApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
 
-        // Popover nativo (material translúcido do sistema) com o mesmo controle da janela.
+        // Native popover (system translucent material) with the same controls as the window.
         MenuBarExtra {
             RemoteView(remote: remote)
             Divider()
@@ -43,7 +43,7 @@ struct TVControlApp: App {
     }
 }
 
-/// Deixa a janela arrastável pelo fundo e sem título, mantendo só os botões do sistema.
+/// Makes the window draggable by its background and title-less, keeping only the system buttons.
 private struct WindowChrome: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let v = NSView()

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-/// Estado compartilhado entre a janela e o popover da barra de menus.
+/// State shared between the window and the menu bar popover.
 @MainActor
 final class Remote: ObservableObject {
     enum Server { case checking, starting, ready, failed(String) }
@@ -19,7 +19,7 @@ final class Remote: ObservableObject {
         didSet { UserDefaults.standard.set(favorites, forKey: "favoriteApps") }
     }
 
-    /// Valor mostrado no slider enquanto o usuário arrasta / a TV ajusta.
+    /// Value shown on the slider while the user drags / the TV catches up.
     @Published var volumeDisplay: Int?
     @Published private(set) var volumeBusy = false
 
@@ -94,8 +94,8 @@ final class Remote: ObservableObject {
         }
     }
 
-    /// Chamado a cada movimento do slider. A TV só aceita "volume +/-" (sem valor absoluto),
-    /// então um único worker leva o volume até o alvo em lotes, uma requisição por vez.
+    /// Called on every slider movement. The TV only accepts "volume +/-" (no absolute value),
+    /// so a single worker steps the volume to the target in batches, one request at a time.
     func setVolume(_ target: Int) {
         volumeDisplay = target
         volumeTarget = target
@@ -118,7 +118,7 @@ final class Remote: ObservableObject {
         }
         volumeTarget = nil
         volumeWorker = nil
-        // Reflete o valor real da TV depois que o último comando assentou.
+        // Show the TV's real value once the last command has settled.
         try? await Task.sleep(nanoseconds: 500_000_000)
         if volumeTarget == nil && volumeWorker == nil {
             volumeBusy = false
@@ -145,11 +145,11 @@ final class Remote: ObservableObject {
     }
 }
 
-/// Nome e logo de cada app conhecido; pacotes Android → nome amigável.
+/// Name and logo of each known app; Android packages → friendly name.
 enum AppCatalog {
     enum Glyph {
-        case svg(String)       // caminho SVG (viewBox 24), uma cor
-        case multi(MultiLogo)  // logo colorido com várias formas
+        case svg(String)       // SVG path (24 viewBox), single color
+        case multi(MultiLogo)  // full-color logo with several shapes
         case symbol(String)    // SF Symbol
     }
 

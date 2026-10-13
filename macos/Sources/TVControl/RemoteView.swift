@@ -13,7 +13,7 @@ private enum Tab: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Estilos
+// MARK: - Styles
 
 private struct Card<Content: View>: View {
     @ViewBuilder var content: Content
@@ -25,7 +25,7 @@ private struct Card<Content: View>: View {
     }
 }
 
-/// Botão de controle: fundo suave, destaque ao passar o mouse e ao pressionar.
+/// Control button: soft background, highlighted on hover and press.
 private struct PadButton: ButtonStyle {
     var prominent = false
     @State private var hover = false
@@ -44,13 +44,13 @@ private struct PadButton: ButtonStyle {
     }
 }
 
-// MARK: - Tela principal
+// MARK: - Main screen
 
 struct RemoteView: View {
     @ObservedObject var remote: Remote
-    /// Espaço extra no topo para os botões da janela (semáforos) quando não há barra de título.
+    /// Extra top space for the window buttons (traffic lights) when there is no title bar.
     var topInset: CGFloat = 0
-    // `-initialTab apps|texto` na linha de comando abre direto numa aba (útil para testes).
+    // `-initialTab apps|texto` on the command line opens straight on a tab (useful for testing).
     @State private var tab: Tab = Tab.allCases.first {
         $0.rawValue.lowercased() == UserDefaults.standard.string(forKey: "initialTab")?.lowercased()
     } ?? .remote
@@ -81,8 +81,8 @@ struct RemoteView: View {
                     get: { tab },
                     set: { new in
                         guard new != tab else { return }
-                        // 1) fixa o sentido; 2) no próximo ciclo troca a aba. Assim a view que sai
-                        // também usa o sentido novo (ela guarda a transição do render anterior).
+                        // 1) set the direction; 2) switch the tab on the next cycle. That way the outgoing view
+                        // also uses the new direction (it keeps the transition from the previous render).
                         slide = new.order > tab.order ? 1 : -1
                         DispatchQueue.main.async {
                             withAnimation(.easeInOut(duration: 0.28)) { tab = new }
@@ -114,10 +114,10 @@ struct RemoteView: View {
         .padding(.top, 16 + topInset)
         .frame(width: 320)
         .background(alignment: .top) {
-            // Fundo fora do conteúdo que anima: cobre a janela toda (inclusive sob os botões do topo).
+            // Background lives outside the animating content: covers the whole window (including under the top buttons).
             ZStack(alignment: .top) {
                 Color(nsColor: .windowBackgroundColor)
-                // Brilho suave no topo: azul quando a TV está ligada, quase neutro quando desligada.
+                // Soft glow at the top: blue when the TV is on, almost neutral when it is off.
                 LinearGradient(colors: [Color.accentColor.opacity(remote.tvOn == true ? 0.20 : 0.05), .clear],
                                startPoint: .top, endPoint: .bottom)
                     .frame(height: 260)
@@ -134,7 +134,7 @@ struct RemoteView: View {
         )
     }
 
-    // MARK: Cabeçalho
+    // MARK: Header
 
     private var header: some View {
         VStack(spacing: 12) {
@@ -189,7 +189,7 @@ struct RemoteView: View {
         }
     }
 
-    // MARK: Aba Controle
+    // MARK: Control tab
 
     private var remoteTab: some View {
         VStack(spacing: 12) {
@@ -257,7 +257,7 @@ struct RemoteView: View {
         }
     }
 
-    /// Anel direcional. Arrastar na área também navega (deslizar = seta).
+    /// Directional ring. Dragging on it also navigates (swipe = arrow).
     private var dpad: some View {
         ZStack {
             Circle().fill(.quaternary.opacity(0.8))
@@ -302,7 +302,7 @@ struct RemoteView: View {
         .help(help)
     }
 
-    // MARK: Aba Apps
+    // MARK: Apps tab
 
     private var appsTab: some View {
         let rows = stride(from: 0, to: remote.apps.count, by: 3).map {
@@ -313,7 +313,7 @@ struct RemoteView: View {
                 if remote.apps.isEmpty {
                     Text("Nenhum app disponível").font(.callout).foregroundStyle(.secondary)
                 } else {
-                    // Linhas fixas (não LazyVGrid) para a altura ser calculada de uma vez.
+                    // Fixed rows (not LazyVGrid) so the height is computed in one pass.
                     VStack(spacing: 14) {
                         ForEach(rows.indices, id: \.self) { r in
                             HStack(alignment: .top, spacing: 8) {
@@ -354,7 +354,7 @@ struct RemoteView: View {
         }
     }
 
-    // MARK: Aba Texto
+    // MARK: Text tab
 
     private var textTab: some View {
         Card {
@@ -384,7 +384,7 @@ private extension View {
     }
 }
 
-/// Ícone arredondado do app: fundo da marca + logo.
+/// Rounded app icon: brand background + logo.
 private struct BrandTile: View {
     let info: AppCatalog.Info
     let size: CGFloat
@@ -408,7 +408,7 @@ private struct BrandTile: View {
     }
 }
 
-/// TV pequena: tela acesa com o app atual, ou preta quando desligada.
+/// Small TV: lit screen with the current app, or black when off.
 private struct TVPreview: View {
     let isOn: Bool?
     let appId: String?
@@ -422,7 +422,7 @@ private struct TVPreview: View {
                     .fill(screen)
                     .padding(5)
                 content.padding(5)
-                // reflexo
+                // reflection
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(LinearGradient(colors: [.white.opacity(isOn == true ? 0.16 : 0.08), .clear],
                                          startPoint: .topLeading, endPoint: .center))
@@ -432,7 +432,7 @@ private struct TVPreview: View {
             .frame(width: 148, height: 84)
             .shadow(color: (isOn == true ? Color.accentColor : .black).opacity(0.35), radius: 12, y: 4)
 
-            // pé da TV
+            // TV stand
             RoundedRectangle(cornerRadius: 2).fill(Color(white: 0.25)).frame(width: 38, height: 5).padding(.top, 3)
         }
         .animation(.easeInOut(duration: 0.45), value: isOn)

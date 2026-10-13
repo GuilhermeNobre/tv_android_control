@@ -1,5 +1,5 @@
 #!/bin/bash
-# Compila o app e monta macos/build/TVControl.app (precisa só das Command Line Tools).
+# Builds the app and assembles macos/build/TVControl.app (only needs the Command Line Tools).
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT="$(cd .. && pwd)"
@@ -12,7 +12,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 cp "$BIN" "$APP/Contents/MacOS/TVControl"
 
-# Ícone do app: desenha o PNG mestre em código e monta o .icns (16 a 1024 px, com @2x).
+# App icon: draw the master PNG in code and assemble the .icns (16 to 1024 px, with @2x).
 ICONSET="build/AppIcon.iconset"
 rm -rf "$ICONSET" && mkdir -p "$ICONSET" "$APP/Contents/Resources"
 swift icon/make-icon.swift build/icon-1024.png

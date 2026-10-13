@@ -1,6 +1,6 @@
 import Foundation
 
-/// Cliente HTTP da API do server.py (FastAPI).
+/// HTTP client for the server.py (FastAPI) API.
 struct TVClient {
     var baseURL = URL(string: "http://127.0.0.1:8000")!
 
@@ -28,7 +28,7 @@ struct TVClient {
             case host, ligada, app_atual, volume, dispositivo, apps, keys
         }
 
-        // volume/dispositivo vêm direto da TV; se o formato mudar, não derruba o resto.
+        // volume/device come straight from the TV; if their format changes, the rest still decodes.
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             host = try c.decode(String.self, forKey: .host)
@@ -45,7 +45,7 @@ struct TVClient {
         let errorDescription: String?
     }
 
-    /// True se o servidor responde HTTP (mesmo com a TV fora do ar).
+    /// True if the server answers HTTP (even when the TV is unreachable).
     func serverIsUp() async -> Bool {
         var req = URLRequest(url: baseURL, timeoutInterval: 2)
         req.httpMethod = "GET"
@@ -78,7 +78,7 @@ struct TVClient {
     private func call(_ path: String, method: String = "POST", body: [String: String]? = nil,
                       timeout: TimeInterval = 20) async throws -> Data {
         var req = URLRequest(url: baseURL.appendingPathComponent(path), timeoutInterval: timeout)
-        // appendingPathComponent escapa "?" — monta pela string quando há query.
+        // appendingPathComponent escapes "?" — build from the string when there is a query.
         if let q = path.firstIndex(of: "?") {
             req.url = URL(string: baseURL.absoluteString + path[..<q] + "?" + path[path.index(after: q)...])
         }
