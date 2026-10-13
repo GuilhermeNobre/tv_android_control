@@ -4,12 +4,41 @@ import Foundation
 struct TVClient {
     var baseURL = URL(string: "http://127.0.0.1:8000")!
 
+    struct Volume: Decodable {
+        let level: Int?
+        let max: Int?
+        let muted: Bool?
+    }
+
+    struct Device: Decodable {
+        let manufacturer: String?
+        let model: String?
+    }
+
     struct Status: Decodable {
         let host: String
         let ligada: Bool?
         let app_atual: String?
+        let volume: Volume?
+        let dispositivo: Device?
         let apps: [String]
         let keys: [String]
+
+        private enum CodingKeys: String, CodingKey {
+            case host, ligada, app_atual, volume, dispositivo, apps, keys
+        }
+
+        // volume/dispositivo vêm direto da TV; se o formato mudar, não derruba o resto.
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            host = try c.decode(String.self, forKey: .host)
+            ligada = try? c.decode(Bool.self, forKey: .ligada)
+            app_atual = try? c.decode(String.self, forKey: .app_atual)
+            volume = try? c.decode(Volume.self, forKey: .volume)
+            dispositivo = try? c.decode(Device.self, forKey: .dispositivo)
+            apps = (try? c.decode([String].self, forKey: .apps)) ?? []
+            keys = (try? c.decode([String].self, forKey: .keys)) ?? []
+        }
     }
 
     struct APIError: LocalizedError {
