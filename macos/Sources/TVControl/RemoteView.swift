@@ -80,8 +80,13 @@ struct RemoteView: View {
                 Picker("", selection: Binding(
                     get: { tab },
                     set: { new in
+                        guard new != tab else { return }
+                        // 1) fixa o sentido; 2) no próximo ciclo troca a aba. Assim a view que sai
+                        // também usa o sentido novo (ela guarda a transição do render anterior).
                         slide = new.order > tab.order ? 1 : -1
-                        withAnimation(.easeInOut(duration: 0.28)) { tab = new }
+                        DispatchQueue.main.async {
+                            withAnimation(.easeInOut(duration: 0.28)) { tab = new }
+                        }
                     }
                 )) {
                     ForEach(Tab.allCases) { t in Label(t.rawValue, systemImage: t.symbol).tag(t) }
@@ -109,11 +114,16 @@ struct RemoteView: View {
         .padding(.top, 16 + topInset)
         .frame(width: 320)
         .background(alignment: .top) {
-            // Brilho suave no topo: azul quando a TV está ligada, quase neutro quando desligada.
-            LinearGradient(colors: [Color.accentColor.opacity(remote.tvOn == true ? 0.20 : 0.05), .clear],
-                           startPoint: .top, endPoint: .bottom)
-                .frame(height: 220)
-                .animation(.easeInOut(duration: 0.6), value: remote.tvOn)
+            // Fundo fora do conteúdo que anima: cobre a janela toda (inclusive sob os botões do topo).
+            ZStack(alignment: .top) {
+                Color(nsColor: .windowBackgroundColor)
+                // Brilho suave no topo: azul quando a TV está ligada, quase neutro quando desligada.
+                LinearGradient(colors: [Color.accentColor.opacity(remote.tvOn == true ? 0.20 : 0.05), .clear],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 260)
+                    .animation(.easeInOut(duration: 0.6), value: remote.tvOn)
+            }
+            .ignoresSafeArea()
         }
     }
 

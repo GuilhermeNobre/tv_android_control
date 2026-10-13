@@ -13,8 +13,7 @@ struct TVControlApp: App {
 
     var body: some Scene {
         Window("TV Control", id: "remote") {
-            RemoteView(remote: remote, topInset: 14)
-                .ignoresSafeArea(.container, edges: .top)
+            RemoteView(remote: remote)
                 .background(WindowChrome())
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     remote.shutdown()
@@ -53,6 +52,7 @@ private struct WindowChrome: NSViewRepresentable {
             w.isMovableByWindowBackground = true
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
+            w.backgroundColor = .windowBackgroundColor
             w.styleMask.insert(.fullSizeContentView)
             w.titlebarSeparatorStyle = .none
         }
