@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#111418">
+<title>Controle da TV</title>
+<style>
+  :root{--bg:#111418;--btn:#232830;--btn2:#2e3540;--fg:#e8ecf1;--acc:#4f8cff;--red:#e5484d;--mut:#8a94a3}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif}
+  body{max-width:420px;margin:0 auto;padding:12px 16px calc(24px + env(safe-area-inset-bottom));user-select:none}
+  header{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:var(--mut);margin-bottom:10px}
+  #dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#666;margin-right:6px}
+  #dot.on{background:#3ecf6e}#dot.off{background:var(--red)}
+  .row{display:grid;gap:10px;margin-bottom:12px}
+  .c2{grid-template-columns:repeat(2,1fr)}.c3{grid-template-columns:repeat(3,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+  button{font:inherit;color:var(--fg);background:var(--btn);border:0;border-radius:14px;min-height:54px;font-size:1.05rem;cursor:pointer;touch-action:manipulation}
+  button:active{background:var(--btn2);transform:scale(.97)}
+  button.red{background:var(--red)}button.acc{background:var(--acc)}
+  .dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 14px}
+  .dpad button{min-height:64px;font-size:1.4rem}
+  .dpad .ok{background:var(--acc);font-weight:600}
+  .sp{visibility:hidden}
+  h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:18px 0 8px}
+  form{display:flex;gap:10px}
+  input{flex:1;min-width:0;font:inherit;padding:12px;border-radius:12px;border:1px solid var(--btn2);background:var(--btn);color:var(--fg)}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:20px;font-size:.9rem;opacity:0;transition:.2s;pointer-events:none;max-width:90vw}
+  #toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header><span><i id="dot"></i><span id="st">conectando…</span></span><span id="app"></span></header>
+
+<div class="row c3">
+  <button class="red" data-p="/api/power/off">⏻ Desligar</button>
+  <button class="acc" data-p="/api/power/on">⏻ Ligar</button>
+  <button data-p="/api/key/power">⏻ Alternar</button>
+</div>
+<div class="row c2">
+  <button data-p="/api/screen/off">Tela off</button>
+  <button data-p="/api/screen/on">Tela on</button>
+</div>
+
+<div class="dpad">
+  <span class="sp"></span><button data-p="/api/key/up">▲</button><span class="sp"></span>
+  <button data-p="/api/key/left">◀</button><button class="ok" data-p="/api/key/ok">OK</button><button data-p="/api/key/right">▶</button>
+  <span class="sp"></span><button data-p="/api/key/down">▼</button><span class="sp"></span>
+</div>
+
+<div class="row c3">
+  <button data-p="/api/key/back">↩ Voltar</button>
+  <button data-p="/api/key/home">⌂ Home</button>
+  <button data-p="/api/key/menu">☰ Menu</button>
+</div>
+
+<h2>Volume e mídia</h2>
+<div class="row c3">
+  <button data-p="/api/key/voldown">🔉 −</button>
+  <button data-p="/api/key/mute">🔇 Mudo</button>
+  <button data-p="/api/key/volup">🔊 +</button>
+</div>
+<div class="row c3">
+  <button data-p="/api/key/prev">⏮</button>
+  <button data-p="/api/key/play">⏯</button>
+  <button data-p="/api/key/next">⏭</button>
+</div>
+
+<h2>Apps</h2>
+<div class="row c3" id="apps"></div>
+
+<h2>Digitar texto</h2>
+<form id="tf"><input id="ti" placeholder="Texto para a TV" autocomplete="off"><button class="acc" style="padding:0 18px">Enviar</button></form>
+
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const APPS={youtube:'YouTube',netflix:'Netflix',primevideo:'Prime',disney:'Disney+',spotify:'Spotify',settings:'Ajustes'};
+for(const [k,v] of Object.entries(APPS)){
+  const b=document.createElement('button');b.textContent=v;b.dataset.p='/api/app/'+k;$('#apps').append(b);
+}
+let tt;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+async function post(path,body){
+  try{
+    const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:body?JSON.stringify(body):undefined});
+    if(!r.ok){const e=await r.json().catch(()=>({}));toast(e.detail||('Erro '+r.status));return false}
+    return true;
+  }catch(e){toast('Sem conexão com o servidor');return false}
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-p]');if(!b)return;
+  navigator.vibrate&&navigator.vibrate(10);
+  await post(b.dataset.p);setTimeout(refresh,600);
+});
+$('#tf').addEventListener('submit',async e=>{
+  e.preventDefault();const v=$('#ti').value;if(!v)return;
+  if(await post('/api/text',{value:v}))$('#ti').value='';
+});
+async function refresh(){
+  try{
+    const r=await fetch('/api/status');
+    if(!r.ok){const e=await r.json().catch(()=>({}));$('#dot').className='';$('#st').textContent=e.detail?'TV inacessível':'erro';return}
+    const s=await r.json();
+    $('#dot').className=s.ligada?'on':'off';
+    $('#st').textContent=s.ligada?'Ligada':'Tela apagada / standby';
+    $('#app').textContent=s.app_atual||'';
+  }catch(e){$('#dot').className='';$('#st').textContent='servidor offline'}
+}
+refresh();setInterval(refresh,5000);
+</script>
+</body>
+</html>
