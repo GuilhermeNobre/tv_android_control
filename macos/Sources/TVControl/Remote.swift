@@ -148,8 +148,8 @@ final class Remote: ObservableObject {
 /// Nome e logo de cada app conhecido; pacotes Android → nome amigável.
 enum AppCatalog {
     enum Glyph {
-        case svg(String)       // caminho SVG (viewBox 24)
-        case text(String)      // sem logo disponível: wordmark em texto
+        case svg(String)       // caminho SVG (viewBox 24), uma cor
+        case multi(MultiLogo)  // logo colorido com várias formas
         case symbol(String)    // SF Symbol
     }
 
@@ -159,12 +159,25 @@ enum AppCatalog {
         switch id {
         case "youtube": return Info(title: "YouTube", glyph: .svg(BrandLogos.youtube), tile: .white, ink: Color(red: 1, green: 0, blue: 0))
         case "netflix": return Info(title: "Netflix", glyph: .svg(BrandLogos.netflix), tile: .black, ink: Color(red: 0.9, green: 0.035, blue: 0.078))
-        case "primevideo": return Info(title: "Prime Video", glyph: .svg(BrandLogos.primevideo), tile: Color(red: 0.0, green: 0.66, blue: 0.88), ink: .white)
-        case "disney": return Info(title: "Disney+", glyph: .text("Disney+"), tile: Color(red: 0.07, green: 0.24, blue: 0.81), ink: .white)
+        case "primevideo": return Info(title: "Prime Video", glyph: .multi(BrandLogos.primevideo), tile: .white, ink: .black)
+        case "disney": return Info(title: "Disney+", glyph: .multi(BrandLogos.disneyplus), tile: .white, ink: .black)
         case "spotify": return Info(title: "Spotify", glyph: .svg(BrandLogos.spotify), tile: Color(red: 0.12, green: 0.84, blue: 0.38), ink: .black)
         case "settings": return Info(title: "Ajustes", glyph: .symbol("gearshape.fill"), tile: Color(white: 0.45), ink: .white)
         case "play": return Info(title: "Play Store", glyph: .svg(BrandLogos.googleplay), tile: .white, ink: Color(red: 0.2, green: 0.66, blue: 0.33))
         default: return Info(title: id.capitalized, glyph: .symbol("app.fill"), tile: .accentColor, ink: .white)
+        }
+    }
+
+    static func id(forPackage pkg: String?) -> String? {
+        switch pkg {
+        case "com.google.android.youtube.tv", "com.google.android.youtube.tvunplugged": return "youtube"
+        case "com.netflix.ninja": return "netflix"
+        case "com.amazon.amazonvideo.livingroom": return "primevideo"
+        case "com.disney.disneyplus": return "disney"
+        case "com.spotify.tv.android": return "spotify"
+        case "com.android.tv.settings", "com.android.settings": return "settings"
+        case "com.android.vending": return "play"
+        default: return nil
         }
     }
 
