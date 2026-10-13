@@ -180,29 +180,38 @@ struct RemoteView: View {
     }
 
     private var volumeCard: some View {
-        let level = remote.volume?.level
         let max = Double(remote.volume?.max ?? 100)
+        let level = remote.volumeDisplay ?? remote.volume?.level
         let muted = remote.volume?.muted ?? false
         return Card {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Button { remote.key("mute") } label: {
-                    Image(systemName: muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    Image(systemName: muted ? "speaker.slash.fill" : "speaker.fill")
                         .foregroundStyle(muted ? Color.orange : Color.secondary)
-                        .frame(width: 24)
+                        .frame(width: 22)
                 }
                 .buttonStyle(.plain).help("Mudo (M)")
                 .keyboardShortcut("m", modifiers: [])
 
-                ProgressView(value: Double(level ?? 0), total: max).tint(muted ? .orange : .accentColor)
+                Slider(
+                    value: Binding(
+                        get: { Double(remote.volumeDisplay ?? remote.volume?.level ?? 0) },
+                        set: { remote.setVolume(Int($0.rounded())) }
+                    ),
+                    in: 0...max, step: 1
+                )
+                .tint(muted ? .orange : .accentColor)
+                .disabled(remote.volume?.level == nil)
+                .help("Arraste para ajustar o volume")
+
+                Button { remote.key("voldown") } label: { Image(systemName: "minus").frame(width: 24, height: 22) }
+                    .buttonStyle(PadButton()).keyboardShortcut("-", modifiers: []).help("Volume −")
+                Button { remote.key("volup") } label: { Image(systemName: "plus").frame(width: 24, height: 22) }
+                    .buttonStyle(PadButton()).keyboardShortcut("=", modifiers: []).help("Volume +")
 
                 Text(level.map(String.init) ?? "—")
                     .font(.system(.body, design: .rounded).weight(.semibold))
-                    .monospacedDigit().frame(width: 28, alignment: .trailing)
-
-                Button { remote.key("voldown") } label: { Image(systemName: "minus").frame(width: 26, height: 26) }
-                    .buttonStyle(PadButton()).keyboardShortcut("-", modifiers: []).help("Volume −")
-                Button { remote.key("volup") } label: { Image(systemName: "plus").frame(width: 26, height: 26) }
-                    .buttonStyle(PadButton()).keyboardShortcut("=", modifiers: []).help("Volume +")
+                    .monospacedDigit().frame(width: 26, alignment: .trailing)
             }
         }
     }
@@ -269,14 +278,10 @@ struct RemoteView: View {
 
     private func appTile(_ id: String, compact: Bool) -> some View {
         let info = AppCatalog.info(id)
+        let size: CGFloat = compact ? 46 : 54
         return Button { remote.launch(id) } label: {
             VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(info.color.gradient)
-                    Image(systemName: info.symbol).font(.system(size: compact ? 18 : 22, weight: .medium))
-                        .foregroundStyle(.white)
-                }
-                .frame(width: compact ? 44 : 52, height: compact ? 44 : 52)
+                BrandTile(info: info, size: size)
                 Text(info.title).font(.caption2).lineLimit(1).foregroundStyle(.primary)
             }
             .frame(maxWidth: .infinity)
@@ -318,5 +323,31 @@ struct RemoteView: View {
 private extension View {
     @ViewBuilder func optionalShortcut(_ k: KeyEquivalent?) -> some View {
         if let k { self.keyboardShortcut(k, modifiers: []) } else { self }
+    }
+}
+
+/// Ícone arredondado do app: fundo da marca + logo.
+private struct BrandTile: View {
+    let info: AppCatalog.Info
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.23, style: .continuous).fill(info.tile)
+            switch info.glyph {
+            case .svg(let d):
+                SVGShape(d: d).fill(info.ink).frame(width: size * 0.62, height: size * 0.62)
+            case .text(let t):
+                Text(t).font(.system(size: size * 0.26, weight: .heavy, design: .rounded))
+                    .foregroundStyle(info.ink).minimumScaleFactor(0.6).lineLimit(1)
+                    .padding(.horizontal, 3)
+            case .symbol(let s):
+                Image(systemName: s).font(.system(size: size * 0.45, weight: .medium)).foregroundStyle(info.ink)
+            }
+        }
+        .frame(width: size, height: size)
+        .overlay(RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
+            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
     }
 }

@@ -19,6 +19,13 @@ final class Remote: ObservableObject {
         didSet { UserDefaults.standard.set(favorites, forKey: "favoriteApps") }
     }
 
+    /// Valor mostrado no slider enquanto o usuário arrasta / a TV ajusta.
+    @Published var volumeDisplay: Int?
+    @Published private(set) var volumeBusy = false
+
+    private var volumeTarget: Int?
+    private var volumeWorker: Task<Void, Never>?
+
     private let client = TVClient()
     private let manager = ServerManager()
     private var timer: Timer?
@@ -61,7 +68,7 @@ final class Remote: ObservableObject {
             tvOn = s.ligada
             currentApp = s.app_atual
             apps = s.apps
-            volume = s.volume
+            if !volumeBusy { volume = s.volume }
             let parts = [s.dispositivo?.manufacturer, s.dispositivo?.model].compactMap { $0 }
             deviceName = parts.isEmpty ? nil : parts.joined(separator: " ")
             message = nil
@@ -87,6 +94,39 @@ final class Remote: ObservableObject {
         }
     }
 
+    /// Chamado a cada movimento do slider. A TV só aceita "volume +/-" (sem valor absoluto),
+    /// então um único worker leva o volume até o alvo em lotes, uma requisição por vez.
+    func setVolume(_ target: Int) {
+        volumeDisplay = target
+        volumeTarget = target
+        volumeBusy = true
+        guard volumeWorker == nil else { return }
+        volumeWorker = Task { await driveVolume() }
+    }
+
+    private func driveVolume() async {
+        while let target = volumeTarget, let cur = volume?.level, target != cur {
+            let step = min(abs(target - cur), 10)
+            let up = target > cur
+            do {
+                try await client.key(up ? "volup" : "voldown", times: step)
+            } catch {
+                message = error.localizedDescription
+                break
+            }
+            volume = TVClient.Volume(level: cur + (up ? step : -step), max: volume?.max, muted: false)
+        }
+        volumeTarget = nil
+        volumeWorker = nil
+        // Reflete o valor real da TV depois que o último comando assentou.
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        if volumeTarget == nil && volumeWorker == nil {
+            volumeBusy = false
+            volumeDisplay = nil
+            await refresh()
+        }
+    }
+
     func launch(_ app: String) { run { try await self.client.app(app) } }
     func sendText(_ t: String) { run { try await self.client.text(t) } }
 
@@ -105,20 +145,26 @@ final class Remote: ObservableObject {
     }
 }
 
-/// Nome, ícone e cor de cada app conhecido; pacotes Android → nome amigável.
+/// Nome e logo de cada app conhecido; pacotes Android → nome amigável.
 enum AppCatalog {
-    struct Info { let title: String; let symbol: String; let color: Color }
+    enum Glyph {
+        case svg(String)       // caminho SVG (viewBox 24)
+        case text(String)      // sem logo disponível: wordmark em texto
+        case symbol(String)    // SF Symbol
+    }
+
+    struct Info { let title: String; let glyph: Glyph; let tile: Color; let ink: Color }
 
     static func info(_ id: String) -> Info {
         switch id {
-        case "youtube": return Info(title: "YouTube", symbol: "play.rectangle.fill", color: .red)
-        case "netflix": return Info(title: "Netflix", symbol: "n.square.fill", color: Color(red: 0.9, green: 0.04, blue: 0.08))
-        case "primevideo": return Info(title: "Prime Video", symbol: "play.tv.fill", color: Color(red: 0.0, green: 0.66, blue: 0.88))
-        case "disney": return Info(title: "Disney+", symbol: "sparkles.tv.fill", color: Color(red: 0.07, green: 0.2, blue: 0.55))
-        case "spotify": return Info(title: "Spotify", symbol: "music.note", color: Color(red: 0.12, green: 0.73, blue: 0.33))
-        case "settings": return Info(title: "Ajustes", symbol: "gearshape.fill", color: .gray)
-        case "play": return Info(title: "Play Store", symbol: "bag.fill", color: .green)
-        default: return Info(title: id.capitalized, symbol: "app.fill", color: .accentColor)
+        case "youtube": return Info(title: "YouTube", glyph: .svg(BrandLogos.youtube), tile: .white, ink: Color(red: 1, green: 0, blue: 0))
+        case "netflix": return Info(title: "Netflix", glyph: .svg(BrandLogos.netflix), tile: .black, ink: Color(red: 0.9, green: 0.035, blue: 0.078))
+        case "primevideo": return Info(title: "Prime Video", glyph: .svg(BrandLogos.primevideo), tile: Color(red: 0.0, green: 0.66, blue: 0.88), ink: .white)
+        case "disney": return Info(title: "Disney+", glyph: .text("Disney+"), tile: Color(red: 0.07, green: 0.24, blue: 0.81), ink: .white)
+        case "spotify": return Info(title: "Spotify", glyph: .svg(BrandLogos.spotify), tile: Color(red: 0.12, green: 0.84, blue: 0.38), ink: .black)
+        case "settings": return Info(title: "Ajustes", glyph: .symbol("gearshape.fill"), tile: Color(white: 0.45), ink: .white)
+        case "play": return Info(title: "Play Store", glyph: .svg(BrandLogos.googleplay), tile: .white, ink: Color(red: 0.2, green: 0.66, blue: 0.33))
+        default: return Info(title: id.capitalized, glyph: .symbol("app.fill"), tile: .accentColor, ink: .white)
         }
     }
 
