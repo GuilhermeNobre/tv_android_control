@@ -20,27 +20,23 @@ struct TVControlApp: App {
         }
         .windowResizability(.contentSize)
 
-        MenuBarExtra("TV Control", systemImage: "tv") {
-            Button(remote.tvOn == true ? "Desligar TV" : "Ligar TV") { remote.togglePower() }
+        // Popover nativo (material translúcido do sistema) com o mesmo controle da janela.
+        MenuBarExtra {
+            RemoteView(remote: remote)
             Divider()
-            Button("Volume +") { remote.key("volup") }
-            Button("Volume −") { remote.key("voldown") }
-            Button("Mudo") { remote.key("mute") }
-            Divider()
-            Button("Início") { remote.key("home") }
-            Button("Voltar") { remote.key("back") }
-            Menu("Abrir app") {
-                ForEach(remote.apps, id: \.self) { a in
-                    Button(a.capitalized) { remote.launch(a) }
+            HStack {
+                Button("Abrir janela") {
+                    openWindow(id: "remote")
+                    NSApp.activate(ignoringOtherApps: true)
                 }
+                Spacer()
+                Button("Sair") { NSApp.terminate(nil) }.keyboardShortcut("q")
             }
-            Divider()
-            Button("Mostrar controle remoto") {
-                openWindow(id: "remote")
-                NSApp.activate(ignoringOtherApps: true)
-            }
-            Button("Sair") { NSApp.terminate(nil) }
-                .keyboardShortcut("q")
+            .buttonStyle(.link)
+            .padding(.horizontal, 16).padding(.vertical, 8)
+        } label: {
+            Image(systemName: remote.tvOn == true ? "tv.fill" : "tv")
         }
+        .menuBarExtraStyle(.window)
     }
 }
