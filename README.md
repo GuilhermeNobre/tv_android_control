@@ -41,3 +41,5 @@ Native app (SwiftUI): remote-control window plus a menu-bar icon. It starts `ser
 
 Needs only the Command Line Tools (`xcode-select --install`) and the `.venv` above. Server log:
 `~/Library/Logs/TVControl-server.log`.
+
+Logos dos apps: [Simple Icons](https://simpleicons.org) v13.21.0 (CC0); as marcas pertencem aos seus donos e são usadas só para identificar cada app. Disney+ não existe nessa biblioteca e aparece como texto. O ícone do app é desenhado em código (`macos/icon/make-icon.swift`) e gerado pelo `build.sh`.
